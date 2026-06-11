@@ -1,0 +1,93 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline Configuration — Edge-Aware Health & Activity Monitoring
+# ─────────────────────────────────────────────────────────────────────────────
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  synthetic_dir: "data/synthetic"
+
+# ── PPG / Respiration ────────────────────────────────────────────────────────
+ppg:
+  sampling_rate: 64          # Hz (WESAD E4 wristband)
+  bandpass_low: 0.5          # Hz
+  bandpass_high: 8.0         # Hz
+  filter_order: 4
+  window_size_sec: 30        # seconds per analysis window
+  window_stride_sec: 15      # 50% overlap
+  peak_method: "elgendi"     # neurokit2 peak detection method
+
+# ── IMU / Motion ─────────────────────────────────────────────────────────────
+imu:
+  sampling_rate: 100         # Hz (PAMAP2)
+  gravity_cutoff_hz: 0.3     # high-pass cutoff to remove gravity
+  window_size_sec: 2.56      # standard HAR window (~256 samples)
+  window_stride_sec: 1.28    # 50% overlap
+  axes: ["x", "y", "z"]
+
+# ── Missing Data ─────────────────────────────────────────────────────────────
+missing_data:
+  flatline_threshold: 0.001  # std below this → dropout detected
+  max_interpolation_gap_sec: 5.0
+  interpolation_method: "cubic"  # linear | cubic | knn
+
+# ── Anomaly Detection ────────────────────────────────────────────────────────
+anomaly:
+  lstm_latent_dim: 64
+  lstm_window_size: 50
+  lstm_epochs: 50
+  reconstruction_error_threshold_percentile: 95
+  isolation_forest_contamination: 0.05
+  zscore_window_size: 100
+  zscore_threshold: 3.0
+
+# ── Activity Classifier ───────────────────────────────────────────────────────
+activity:
+  classes:
+    - "lying"
+    - "sitting"
+    - "standing"
+    - "walking"
+    - "running"
+    - "cycling"
+  num_classes: 6
+  cnn_filters: [32, 64, 128]
+  cnn_kernel_size: 3
+  dense_units: [128, 64]
+  dropout_rate: 0.3
+  epochs: 60
+  batch_size: 64
+  learning_rate: 0.001
+
+# ── Edge Deployment ───────────────────────────────────────────────────────────
+edge:
+  target_format: "tflite"    # tflite | onnx
+  quantization: "int8"       # float32 | float16 | int8
+  model_output_dir: "src/edge/models"
+
+# ── Alert Engine ──────────────────────────────────────────────────────────────
+alerts:
+  info_threshold: 0.4
+  warning_threshold: 0.65
+  critical_threshold: 0.85
+  hysteresis_window_sec: 30  # cool-down between alerts of same level
+  log_path: "data/processed/alerts.json"
+
+# ── Cloud / MQTT ─────────────────────────────────────────────────────────────
+mqtt:
+  broker_host: "localhost"
+  broker_port: 1883
+  device_id: "wearable_001"
+  topics:
+    ppg: "wearable/{device_id}/ppg"
+    motion: "wearable/{device_id}/motion"
+    anomaly: "wearable/{device_id}/anomaly"
+    activity: "wearable/{device_id}/activity"
+    alert: "wearable/{device_id}/alert"
+  publish_interval_sec: 1.0
+
+influxdb:
+  url: "http://localhost:8086"
+  token: "your_influxdb_token_here"
+  org: "wearable_lab"
+  bucket: "health_monitoring"
