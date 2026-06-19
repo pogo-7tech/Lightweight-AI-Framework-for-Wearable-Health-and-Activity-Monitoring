@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Cloud Config — MQTT + InfluxDB + Grafana
+# ─────────────────────────────────────────────────────────────────────────────
+
+mosquitto:
+  image: "eclipse-mosquitto:2.0"
+  port: 1883
+  ws_port: 9001
+  config_path: "./mosquitto/mosquitto.conf"
+
+influxdb:
+  image: "influxdb:2.7"
+  port: 8086
+  admin_user: "admin"
+  admin_password: "adminpassword"
+  org: "wearable_lab"
+  bucket: "health_monitoring"
+  retention: "30d"
+
+grafana:
+  image: "grafana/grafana:10.1.0"
+  port: 3000
+  admin_user: "admin"
+  admin_password: "grafana"
