@@ -37,6 +37,18 @@ Wearable Sensors (PPG + IMU)
 
 ---
 
+## Weekly Progress
+
+| Week | Deliverables | Key Result |
+|------|-------------|------------|
+| **Week 1** | PPG preprocessing pipeline, IMU gravity separation, baseline wander removal | PPG SNR: 18.4 dB |
+| **Week 2** | HRV feature extraction (RMSSD, SDNN, pNN50), 15-subject WESAD EDA, signal quality scoring | R² HRV Fit: 0.87 |
+| **Week 3** | 1D-CNN denoiser training on PAMAP2 (8 subjects), motion artifact removal | MSE = 0.016 |
+| **Week 4** | LSTM-AE anomaly detector (AUC=0.962), Isolation Forest (AUC=0.895), TFLite INT8 edge benchmark | 74.2% model compression |
+| **Week 5** | MQTT + InfluxDB cloud pipeline, Streamlit real-time dashboard, end-to-end integration validation | 92.5% bandwidth reduction, E2E latency 10.7 ms |
+
+---
+
 ## Project Structure
 
 ```
@@ -58,13 +70,24 @@ Internship/
 │   │   └── alert_engine.py       # confidence-aware 3-tier alerts
 │   ├── edge/
 │   │   └── export_tflite.py      # INT8 TFLite + ONNX export + benchmark
-│   ├── cloud/
+│   ├── cloud/                    # ← NEW in Week 5
 │   │   ├── mqtt_publisher.py     # simulated edge MQTT publisher
 │   │   ├── influxdb_writer.py    # MQTT→InfluxDB subscriber
 │   │   └── docker-compose.yml    # Mosquitto + InfluxDB + Grafana stack
-│   └── dashboard/
-│       └── app.py                # Streamlit monitoring dashboard
+│   └── dashboard/                # ← NEW in Week 5
+│       └── app.py                # Streamlit real-time monitoring dashboard
 ├── notebooks/            # EDA and training notebooks
+│   ├── W2_01_data_loading.py
+│   ├── W2_02_ppg_eda.py
+│   ├── W2_03_hrv_analysis.py
+│   ├── W2_04_signal_quality.py
+│   ├── W3_01_motion_pipeline.py
+│   ├── W3_02_denoiser_training.py
+│   ├── W4_01_anomaly_detection.py
+│   ├── W4_02_edge_benchmark.py
+│   ├── W5_01_dashboard_demo.py       # ← NEW
+│   ├── W5_02_integration_validation.py  # ← NEW
+│   └── W5_03_final_summary.py           # ← NEW
 ├── tests/                # pytest unit tests
 ├── benchmarks/
 │   └── latency_benchmark.py      # cloud vs edge latency comparison
@@ -98,17 +121,45 @@ cd src/cloud
 docker compose up -d
 ```
 
-### 4. Run tests
+### 4. Run Week 5 notebooks
+
+```bash
+# Telemetry & dashboard demo
+python notebooks/W5_01_dashboard_demo.py
+
+# End-to-end integration validation
+python notebooks/W5_02_integration_validation.py
+
+# 5-week project summary
+python notebooks/W5_03_final_summary.py
+```
+
+### 5. Run tests
 
 ```bash
 pytest tests/ -v --tb=short
 ```
 
-### 5. Run latency benchmark
+### 6. Run latency benchmark
 
 ```bash
 python benchmarks/latency_benchmark.py
 ```
+
+---
+
+## Key Results
+
+| Metric | Value |
+|--------|-------|
+| LSTM-AE Anomaly AUC-ROC | **0.962** |
+| Isolation Forest AUC-ROC | 0.895 |
+| Denoiser MSE | 0.016 |
+| TFLite INT8 model size | 108 KB (↓74.2% from 420 KB) |
+| Edge inference latency | 2.1 ms (↓83% from 12.4 ms FP32) |
+| Bandwidth reduction | **92.5%** (raw → MQTT telemetry) |
+| End-to-end pipeline latency | **10.7 ms** |
+| Alert engine test pass rate | 8/8 ✅ |
 
 ---
 
