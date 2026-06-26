@@ -29,6 +29,15 @@ from plotly.subplots import make_subplots
 from datetime import datetime, timezone
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Version sentinel — wipe ALL session state if dashboard version changed
+# This prevents KeyError from stale session state of previous dashboard versions
+# ─────────────────────────────────────────────────────────────────────────────
+_DASHBOARD_VERSION = "v2-week5-6activity"
+if st.session_state.get("_dashboard_version") != _DASHBOARD_VERSION:
+    st.session_state.clear()
+    st.session_state["_dashboard_version"] = _DASHBOARD_VERSION
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Page Config
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -111,15 +120,20 @@ ACTIVITY_SCHEDULE = [
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Session State
+# Session State — clear stale keys from any previous dashboard version
 # ─────────────────────────────────────────────────────────────────────────────
 HISTORY_KEYS = [
     "timestamps", "hr", "rmssd", "sdnn", "ae_score",
     "anomaly_flag", "activity", "risk_score", "alert_tier",
 ]
 
+# If old "history" dict exists (from previous version), wipe it cleanly
+if "history" in st.session_state:
+    del st.session_state["history"]
+
+# Ensure all keys exist as flat lists
 for key in HISTORY_KEYS:
-    if key not in st.session_state:
+    if key not in st.session_state or not isinstance(st.session_state[key], list):
         st.session_state[key] = []
 
 if "sim_t" not in st.session_state:
@@ -201,7 +215,7 @@ def simulate_sample(t: int, anomaly_counter: int) -> dict:
     alert_tier   = classify_tier(risk, t)
 
     return {
-        "timestamp":    datetime.now(timezone.utc),
+        "timestamps":   datetime.now(timezone.utc),
         "hr":           round(float(hr), 1),
         "rmssd":        round(float(max(rmssd, 1.0)), 2),
         "sdnn":         round(float(max(sdnn, 1.0)), 2),
